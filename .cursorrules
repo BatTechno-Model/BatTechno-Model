@@ -1,0 +1,368 @@
+# BatTechno Model - Cursor Rules
+
+## Project Overview
+BatTechno Model is a production-ready, mobile-app-like web platform for managing full-stack courses. It includes course management, attendance tracking, assignments, and student submissions with full RTL (Arabic) and LTR (English) support.
+
+## Tech Stack
+
+### Backend
+- **Runtime**: Node.js (ES Modules)
+- **Framework**: Express.js
+- **Database**: PostgreSQL (Neon compatible)
+- **ORM**: Prisma
+- **Language**: JavaScript ONLY (NO TypeScript)
+- **Auth**: JWT (access + refresh tokens)
+- **File Upload**: Multer (local storage, abstracted for future S3 migration)
+- **Validation**: Zod + express-validator
+
+### Frontend
+- **Framework**: React 18 (Vite)
+- **Styling**: TailwindCSS
+- **Animations**: Framer Motion
+- **Routing**: React Router v6
+- **State Management**: TanStack Query (React Query)
+- **i18n**: i18next (Arabic/English with RTL/LTR switching)
+- **Forms**: React Hook Form + Zod
+- **Icons**: Lucide React
+- **Language**: JavaScript ONLY (NO TypeScript)
+
+## Project Structure
+
+```
+BatTechno Model/
+├── backend/
+│   ├── config/          # Database configuration
+│   ├── middleware/       # Auth middleware
+│   ├── routes/          # API route handlers
+│   ├── utils/           # Utilities (upload, validation)
+│   ├── prisma/          # Prisma schema and migrations
+│   ├── uploads/         # Uploaded files (gitignored)
+│   └── server.js         # Express server entry point
+├── frontend/
+│   ├── src/
+│   │   ├── components/  # Reusable UI components
+│   │   ├── context/     # React contexts (Auth, Toast)
+│   │   ├── pages/       # Page components
+│   │   ├── i18n/        # Internationalization config
+│   │   └── utils/       # API utilities
+│   └── public/
+└── database/
+    └── neon_schema.sql  # PostgreSQL schema for Neon SQL Editor
+```
+
+## Code Style Guidelines
+
+### General
+- Use ES6+ features (async/await, destructuring, arrow functions)
+- Use meaningful variable and function names
+- Keep functions small and focused (single responsibility)
+- Add comments for complex logic
+- Use consistent indentation (2 spaces)
+
+### Backend
+- Use Express.js middleware pattern
+- Always validate input with Zod or express-validator
+- Use Prisma for all database operations
+- Handle errors gracefully with try-catch
+- Return consistent JSON response format: `{ data?, error?, message? }`
+- Use environment variables for all configuration
+- Follow RESTful API conventions
+- Version APIs: `/api/v1/...`
+
+### Frontend
+- Use functional components with hooks
+- Keep components small and reusable
+- Use TanStack Query for all API calls
+- Implement loading and error states
+- Use Framer Motion for animations (page transitions, micro-interactions)
+- Mobile-first responsive design
+- Implement skeleton loaders for async data
+- Use i18next for all user-facing text
+
+## Internationalization (i18n)
+
+### Critical Rules
+- **ALWAYS** use translation keys from `i18n/index.js` for user-facing text
+- **NEVER** hardcode Arabic or English text in components
+- Support both Arabic (RTL) and English (LTR)
+- Update both `ar` and `en` translation objects when adding new keys
+- Use `useTranslation()` hook: `const { t } = useTranslation()`
+- Set document direction: `document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr')`
+
+### Translation Key Naming
+- Use camelCase: `createCourse`, `markAttendance`
+- Group by feature: `courses.*`, `attendance.*`, `assignments.*`
+- Keep keys descriptive but concise
+
+## UI/UX Guidelines
+
+### Mobile-First Design
+- Design for mobile screens first, then scale up
+- Use bottom navigation for main navigation (mobile-app-like)
+- Implement safe-area insets for iOS devices
+- Touch-friendly button sizes (min 44x44px)
+- Smooth page transitions with Framer Motion
+
+### Animations
+- Use Framer Motion for:
+  - Page transitions (`initial`, `animate`, `exit`)
+  - Micro-interactions (`whileHover`, `whileTap`)
+  - List animations (stagger children)
+  - Loading states
+- Keep animations subtle and purposeful
+- Respect `prefers-reduced-motion` (optional but preferred)
+
+### RTL Support
+- Test all layouts in both RTL and LTR
+- Use logical CSS properties (`margin-inline-start` instead of `margin-left`)
+- TailwindCSS handles most RTL automatically with `dir="rtl"`
+- Arabic font: Cairo (primary), Tajawal (fallback)
+- English font: Inter
+
+## Database Guidelines
+
+### Prisma Schema
+- Use descriptive model and field names
+- Add indexes for frequently queried fields
+- Use enums for status fields (AttendanceStatus, SubmissionStatus, etc.)
+- Cascade deletes appropriately
+- Use `@updatedAt` for automatic timestamp updates
+- Add comments for complex relationships
+
+### Migrations
+- Use `prisma migrate dev` for development
+- Use `prisma db push` for quick schema sync (dev only)
+- Never edit migration files manually
+- Always test migrations on a copy of production data
+
+## API Design
+
+### Endpoints Structure
+```
+/api/v1/
+  ├── auth/          # Authentication
+  ├── users/         # User management
+  ├── courses/       # Course CRUD
+  ├── sessions/      # Session management
+  ├── attendance/    # Attendance tracking
+  ├── assignments/   # Assignment CRUD
+  ├── submissions/   # Student submissions
+  └── reviews/       # Instructor reviews
+```
+
+### Response Format
+```javascript
+// Success
+{ data: {...}, message?: "..." }
+
+// Error
+{ error: "Error message", details?: [...] }
+```
+
+### Authentication
+- Use JWT Bearer tokens: `Authorization: Bearer <token>`
+- Implement refresh token flow
+- Protect routes with `authenticateToken` middleware
+- Use `requireRole` for role-based access control
+
+## File Upload
+
+### Current Implementation
+- Files stored locally in `backend/uploads/`
+- Abstracted storage layer for future S3 migration
+- Max file size: 10MB (configurable via env)
+- Supported types: All (can be restricted later)
+
+### Future Migration
+- Storage provider abstraction in `utils/upload.js`
+- Easy switch to S3 by changing storage implementation
+- Keep same API interface
+
+## Security Best Practices
+
+### Backend
+- Use Helmet.js for security headers
+- Implement CORS properly (whitelist frontend URL)
+- Rate limiting on API routes
+- Hash passwords with bcrypt (10 rounds)
+- Validate all inputs (Zod schemas)
+- Sanitize user input
+- Use parameterized queries (Prisma handles this)
+
+### Frontend
+- Never expose API secrets
+- Store tokens in localStorage (consider httpOnly cookies for production)
+- Validate forms client-side before submission
+- Sanitize user-generated content
+- Use HTTPS in production
+
+## Testing Guidelines
+
+### Backend
+- Use Supertest for API endpoint testing
+- Test authentication flows
+- Test role-based access control
+- Test validation errors
+- Test error handling
+
+### Frontend
+- Test user flows end-to-end
+- Test RTL/LTR switching
+- Test responsive layouts
+- Test form validation
+- Test loading and error states
+
+## Common Patterns
+
+### API Route Handler
+```javascript
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await prisma.model.findUnique({ where: { id } });
+    if (!data) return res.status(404).json({ error: 'Not found' });
+    res.json({ data });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+```
+
+### React Component with Query
+```javascript
+import { useQuery } from '@tanstack/react-query';
+import api from '../utils/api';
+
+export default function Component() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['key'],
+    queryFn: () => api.getData(),
+  });
+
+  if (isLoading) return <Skeleton />;
+  if (error) return <ErrorState />;
+  return <Content data={data} />;
+}
+```
+
+### Form with React Hook Form
+```javascript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+export default function Form() {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
+  });
+  
+  const onSubmit = (data) => {
+    // Handle submission
+  };
+  
+  return <form onSubmit={handleSubmit(onSubmit)}>...</form>;
+}
+```
+
+## Important Reminders
+
+### DO
+- ✅ Always use translation keys (never hardcode text)
+- ✅ Test in both RTL and LTR modes
+- ✅ Implement loading states
+- ✅ Handle errors gracefully
+- ✅ Use Prisma for database operations
+- ✅ Validate all inputs
+- ✅ Follow RESTful conventions
+- ✅ Keep components small and focused
+- ✅ Use Framer Motion for animations
+- ✅ Mobile-first design approach
+
+### DON'T
+- ❌ Don't use TypeScript (JavaScript only)
+- ❌ Don't create Dockerfiles or YAML files
+- ❌ Don't hardcode API URLs (use env variables)
+- ❌ Don't commit `.env` files
+- ❌ Don't skip error handling
+- ❌ Don't ignore loading states
+- ❌ Don't hardcode user-facing text
+- ❌ Don't use inline styles (use TailwindCSS)
+- ❌ Don't create dead links or broken buttons
+- ❌ Don't skip RTL testing
+
+## Environment Variables
+
+### Backend (.env)
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_ACCESS_SECRET` - JWT access token secret
+- `JWT_REFRESH_SECRET` - JWT refresh token secret
+- `PORT` - Server port (default: 5000)
+- `FRONTEND_URL` - Frontend URL for CORS
+- `UPLOAD_DIR` - File upload directory
+- `MAX_FILE_SIZE` - Max file size in bytes
+
+### Frontend (.env)
+- `VITE_API_URL` - Backend API URL
+
+## Git Guidelines
+
+### Ignore
+- `node_modules/`
+- `.env` files
+- `uploads/` directory
+- Build outputs (`dist/`, `.next/`)
+- IDE files (`.vscode/`, `.idea/`)
+
+### Commit Messages
+- Use clear, descriptive messages
+- Reference issue numbers if applicable
+- Use present tense: "Add feature" not "Added feature"
+
+## Performance Considerations
+
+### Backend
+- Use database indexes for frequently queried fields
+- Implement pagination for large lists
+- Use select statements to limit returned fields
+- Cache frequently accessed data (if needed)
+- Optimize N+1 queries with Prisma `include`
+
+### Frontend
+- Lazy load routes with React.lazy()
+- Optimize images
+- Use React.memo() for expensive components
+- Debounce search inputs
+- Implement virtual scrolling for long lists (if needed)
+
+## Accessibility
+
+- Use semantic HTML elements
+- Add ARIA labels where needed
+- Ensure keyboard navigation works
+- Maintain proper color contrast
+- Support screen readers
+- Test with keyboard-only navigation
+
+## Deployment Checklist
+
+- [ ] Set production environment variables
+- [ ] Update CORS settings
+- [ ] Configure file storage (S3 if migrating)
+- [ ] Set up SSL/HTTPS
+- [ ] Configure database backups
+- [ ] Set up error monitoring (Sentry, etc.)
+- [ ] Configure logging
+- [ ] Test all critical user flows
+- [ ] Verify RTL/LTR switching works
+- [ ] Test file uploads
+- [ ] Verify email functionality (if added)
+
+---
+
+**Remember**: This is a production-ready platform. Code quality, user experience, and maintainability are priorities. Always think mobile-first, RTL-ready, and user-friendly.

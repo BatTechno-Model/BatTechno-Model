@@ -1,0 +1,226 @@
+// Prisma Schema for BatTechno Model
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  NEEDS_CHANGES
+  APPROVED
+}
+
+enum AssetType {
+  FILE
+  LINK
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  role         UserRole @default(STUDENT)
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  createdCourses         Course[]             @relation("CourseCreator")
+  enrollments            Enrollment[]
+  attendances            Attendance[]
+  submissions            Submission[]
+  reviews                Review[]
+  createdAssignmentResources AssignmentResource[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator     User         @relation("CourseCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+  sessions    Session[]
+  assignments Assignment[]
+
+  @@index([createdBy])
+}
+
+model Enrollment {
+  id         String           @id @default(cuid())
+  userId     String
+  courseId   String
+  status     EnrollmentStatus @default(ACTIVE)
+  enrolledAt DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  courseId  String
+  date      DateTime
+  startTime String
+  endTime   String
+  topic     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+
+  @@index([courseId])
+  @@index([date])
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  sessionId  String
+  studentId  String
+  status     AttendanceStatus @default(ABSENT)
+  note       String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?
+  dueDate     DateTime
+  maxScore    Int      @default(100)
+  rubric      Json?    // JSON structure for rubric criteria
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+  resources   AssignmentResource[]
+
+  @@index([courseId])
+  @@index([dueDate])
+  @@index([isPublished])
+}
+
+model AssignmentResource {
+  id           String    @id @default(cuid())
+  assignmentId String
+  type         AssetType
+  url          String    // file path or external URL
+  name         String
+  createdBy    String
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  creator    User       @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([createdBy])
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  assignmentId String
+  studentId   String
+  submittedAt DateTime         @default(now())
+  status      SubmissionStatus @default(SUBMITTED)
+  note        String?
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  assignment    Assignment      @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student       User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assets        SubmissionAsset[]
+  reviews       Review[]
+
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+}
+
+model SubmissionAsset {
+  id           String    @id @default(cuid())
+  submissionId String
+  type         AssetType
+  url          String    // file path or external URL
+  name         String
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  submissionId String
+  reviewerId   String
+  score        Int?
+  rubricResult Json?    // JSON structure matching assignment rubric
+  feedback     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  reviewer   User       @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, reviewerId])
+  @@index([submissionId])
+  @@index([reviewerId])
+}
