@@ -206,6 +206,246 @@ async function main() {
   });
   console.log('✅ Created sample submission');
 
+  // Create sample pre and post quizzes for first session
+  const firstSession = sessions[0];
+  
+  const preQuiz = await prisma.quiz.create({
+    data: {
+      courseId: course.id,
+      sessionId: firstSession.id,
+      type: 'PRE',
+      title: 'Pre-Lecture Quiz: React Basics',
+      description: 'Test your knowledge before the React session',
+      status: 'PUBLISHED',
+      timeLimitMinutes: 15,
+      attemptsAllowed: 1,
+      createdBy: instructor.id,
+      questions: {
+        create: [
+          {
+            type: 'MCQ',
+            prompt: 'What is React?',
+            choices: ['A library', 'A framework', 'A programming language', 'A database'],
+            correctAnswer: 'A library',
+            points: 1,
+            tags: ['React', 'Basics'],
+            orderIndex: 0,
+          },
+          {
+            type: 'TRUE_FALSE',
+            prompt: 'React uses Virtual DOM',
+            choices: ['True', 'False'],
+            correctAnswer: 'true',
+            points: 1,
+            tags: ['React', 'Virtual DOM'],
+            orderIndex: 1,
+          },
+          {
+            type: 'SHORT_TEXT',
+            prompt: 'What hook is used for state management?',
+            correctAnswer: 'useState',
+            points: 2,
+            tags: ['React', 'Hooks'],
+            orderIndex: 2,
+          },
+        ],
+      },
+    },
+  });
+
+  const postQuiz = await prisma.quiz.create({
+    data: {
+      courseId: course.id,
+      sessionId: firstSession.id,
+      type: 'POST',
+      title: 'Post-Lecture Quiz: React Basics',
+      description: 'Test your understanding after the React session',
+      status: 'PUBLISHED',
+      timeLimitMinutes: 20,
+      attemptsAllowed: 1,
+      createdBy: instructor.id,
+      questions: {
+        create: [
+          {
+            type: 'MCQ',
+            prompt: 'What is JSX?',
+            choices: ['JavaScript XML', 'Java Syntax Extension', 'JSON XML', 'JavaScript Extension'],
+            correctAnswer: 'JavaScript XML',
+            points: 1,
+            tags: ['React', 'JSX'],
+            orderIndex: 0,
+          },
+          {
+            type: 'TRUE_FALSE',
+            prompt: 'React components must return a single element',
+            choices: ['True', 'False'],
+            correctAnswer: 'true',
+            points: 1,
+            tags: ['React', 'Components'],
+            orderIndex: 1,
+          },
+          {
+            type: 'SHORT_TEXT',
+            prompt: 'What method is used to update state in React?',
+            correctAnswer: 'setState',
+            points: 2,
+            tags: ['React', 'State'],
+            orderIndex: 2,
+          },
+        ],
+      },
+    },
+  });
+  console.log('✅ Created sample quizzes (pre and post)');
+
+  // Create sample pre and post exams for first session
+  const preExam = await prisma.exam.create({
+    data: {
+      courseId: course.id,
+      sessionId: firstSession.id,
+      type: 'PRE',
+      title: 'Pre-Lecture Exam: React Basics',
+      description: 'Test your knowledge before the React session (Score out of 10)',
+      status: 'PUBLISHED',
+      timeLimitMinutes: 15,
+      attemptsAllowed: 1,
+      examQuestionCount: 5,
+      showSolutionsAfterSubmit: true,
+      createdBy: instructor.id,
+      questions: {
+        create: [
+          {
+            questionType: 'MCQ',
+            prompt: 'What is React?',
+            choices: ['A library', 'A framework', 'A programming language', 'A database'],
+            correctAnswer: 0, // Index of correct choice
+            points: 2,
+            orderIndex: 0,
+          },
+          {
+            questionType: 'MCQ',
+            prompt: 'What does JSX stand for?',
+            choices: ['JavaScript XML', 'Java Syntax Extension', 'JSON XML', 'JavaScript Extension'],
+            correctAnswer: 0,
+            points: 2,
+            orderIndex: 1,
+          },
+          {
+            questionType: 'TRUE_FALSE',
+            prompt: 'React uses Virtual DOM',
+            correctAnswer: true,
+            points: 2,
+            orderIndex: 2,
+          },
+          {
+            questionType: 'TRUE_FALSE',
+            prompt: 'React components must return a single element',
+            correctAnswer: true,
+            points: 2,
+            orderIndex: 3,
+          },
+          {
+            questionType: 'MCQ',
+            prompt: 'What hook is used for state management?',
+            choices: ['useState', 'useEffect', 'useContext', 'useReducer'],
+            correctAnswer: 0,
+            points: 2,
+            orderIndex: 4,
+          },
+          {
+            questionType: 'MCQ',
+            prompt: 'What is the purpose of useEffect?',
+            choices: ['State management', 'Side effects', 'Rendering', 'Styling'],
+            correctAnswer: 1,
+            points: 2,
+            orderIndex: 5,
+          },
+          {
+            questionType: 'TRUE_FALSE',
+            prompt: 'React is a framework',
+            correctAnswer: false,
+            points: 2,
+            orderIndex: 6,
+          },
+        ],
+      },
+    },
+  });
+
+  const postExam = await prisma.exam.create({
+    data: {
+      courseId: course.id,
+      sessionId: firstSession.id,
+      type: 'POST',
+      title: 'Post-Lecture Exam: React Basics',
+      description: 'Test your understanding after the React session (Score out of 10)',
+      status: 'PUBLISHED',
+      timeLimitMinutes: 20,
+      attemptsAllowed: 1,
+      examQuestionCount: 5,
+      showSolutionsAfterSubmit: true,
+      createdBy: instructor.id,
+      questions: {
+        create: [
+          {
+            questionType: 'MCQ',
+            prompt: 'What is the correct way to update state in React?',
+            choices: ['this.state = value', 'setState(value)', 'state = value', 'updateState(value)'],
+            correctAnswer: 1,
+            points: 2,
+            orderIndex: 0,
+          },
+          {
+            questionType: 'MCQ',
+            prompt: 'What is a React component?',
+            choices: ['A function or class', 'A variable', 'A string', 'An object'],
+            correctAnswer: 0,
+            points: 2,
+            orderIndex: 1,
+          },
+          {
+            questionType: 'TRUE_FALSE',
+            prompt: 'React components can return multiple elements using fragments',
+            correctAnswer: true,
+            points: 2,
+            orderIndex: 2,
+          },
+          {
+            questionType: 'TRUE_FALSE',
+            prompt: 'Props are mutable in React',
+            correctAnswer: false,
+            points: 2,
+            orderIndex: 3,
+          },
+          {
+            questionType: 'MCQ',
+            prompt: 'What is the purpose of keys in React lists?',
+            choices: ['Styling', 'Performance optimization', 'Validation', 'Routing'],
+            correctAnswer: 1,
+            points: 2,
+            orderIndex: 4,
+          },
+          {
+            questionType: 'MCQ',
+            prompt: 'What is the lifecycle method equivalent to useEffect?',
+            choices: ['componentDidMount', 'componentWillMount', 'componentDidUpdate', 'componentWillUnmount'],
+            correctAnswer: 0,
+            points: 2,
+            orderIndex: 5,
+          },
+          {
+            questionType: 'TRUE_FALSE',
+            prompt: 'React Hooks can only be used in functional components',
+            correctAnswer: true,
+            points: 2,
+            orderIndex: 6,
+          },
+        ],
+      },
+    },
+  });
+  console.log('✅ Created sample exams (pre and post)');
+
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📋 Login Credentials (DEV ONLY):');
   console.log('Admin: admin@battechno.com / Admin@123Strong!');

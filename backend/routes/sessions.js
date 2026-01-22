@@ -29,6 +29,33 @@ router.get('/course/:courseId', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all sessions (Admin only)
+router.get('/all', authenticateToken, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const sessions = await prisma.session.findMany({
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        _count: {
+          select: {
+            attendances: true,
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    res.json({ sessions });
+  } catch (error) {
+    console.error('Get all sessions error:', error);
+    res.status(500).json({ error: 'Failed to fetch sessions' });
+  }
+});
+
 // Get session by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -49,6 +76,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
                     id: true,
                     name: true,
                     email: true,
+                    profile: {
+                      select: {
+                        avatar: true,
+                      },
+                    },
                   },
                 },
               },
@@ -62,6 +94,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 id: true,
                 name: true,
                 email: true,
+                profile: {
+                  select: {
+                    avatar: true,
+                  },
+                },
               },
             },
           },

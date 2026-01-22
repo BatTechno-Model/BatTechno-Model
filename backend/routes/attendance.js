@@ -215,7 +215,7 @@ router.get('/course/:courseId/summary', authenticateToken, requireRole('ADMIN', 
 // Get all students attendance summary across all courses (admin only)
 router.get('/students/summary', authenticateToken, requireRole('ADMIN'), async (req, res) => {
   try {
-    // Get all students
+    // Get all students with their profiles
     const students = await prisma.user.findMany({
       where: {
         role: 'STUDENT',
@@ -226,6 +226,11 @@ router.get('/students/summary', authenticateToken, requireRole('ADMIN'), async (
         email: true,
         phone: true,
         createdAt: true,
+        profile: {
+          select: {
+            avatar: true,
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -289,12 +294,14 @@ router.get('/students/summary', authenticateToken, requireRole('ADMIN'), async (
         return {
           student,
           courses: studentCourses.map((c) => c.title),
-          totalSessions,
-          presentCount,
-          absentCount,
-          lateCount,
-          excusedCount,
-          attendanceRate,
+          summary: {
+            totalSessions,
+            presentCount,
+            absentCount,
+            lateCount,
+            excusedCount,
+            attendanceRate,
+          },
         };
       })
     );

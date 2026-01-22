@@ -93,12 +93,12 @@ export default function Students() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-5xl mx-auto px-4 py-4 pb-20">
+      <div className="flex justify-between items-center mb-4">
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold text-gray-900"
+          className="text-xl font-bold text-gray-900"
         >
           {t('students')}
         </motion.h1>
@@ -106,94 +106,94 @@ export default function Students() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleAdd}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition font-semibold"
+            className="flex items-center gap-1.5 bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition text-sm font-semibold"
           >
-            <UserPlus size={20} />
+            <UserPlus size={16} />
             {t('addStudent')}
           </motion.button>
         )}
       </div>
 
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('search')}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
       </div>
 
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-16" count={5} />
+        <div className="space-y-2">
+          <Skeleton className="h-14" count={5} />
         </div>
       ) : students.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-16 bg-white rounded-xl border border-gray-200"
+          className="text-center py-12 bg-white rounded-lg border border-gray-200"
         >
-          <Users className="mx-auto text-gray-400 mb-4" size={64} />
-          <p className="text-gray-600 text-lg">{t('noStudents')}</p>
+          <Users className="mx-auto text-gray-400 mb-3" size={48} />
+          <p className="text-gray-600">{t('noStudents')}</p>
         </motion.div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
             {students.map((student, i) => (
               <motion.div
                 key={student.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="p-4 hover:bg-gray-50 transition"
+                transition={{ delay: i * 0.03 }}
+                className="p-3 hover:bg-gray-50 transition"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{student.name}</h3>
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">{student.name}</h3>
                       {courseId && enrolledStudentIds.includes(student.id) && (
-                        <CheckCircle className="text-green-600" size={16} title={t('enrolled')} />
+                        <CheckCircle className="text-green-600 flex-shrink-0" size={14} title={t('enrolled')} />
                       )}
                     </div>
-                    <p className="text-sm text-gray-600">{student.email}</p>
-                    {student.phone && <p className="text-sm text-gray-500">{student.phone}</p>}
+                    <p className="text-xs text-gray-600 truncate mt-0.5">{student.email}</p>
+                    {student.phone && <p className="text-xs text-gray-500 mt-0.5">{student.phone}</p>}
                   </div>
                   {canManage && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-3">
                       {courseId && !enrolledStudentIds.includes(student.id) && (
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => handleEnroll(e, student.id)}
-                          className="px-3 py-1.5 text-green-600 hover:bg-green-50 rounded-lg transition text-sm font-semibold flex items-center gap-1"
+                          className="px-2 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition font-medium flex items-center gap-1"
                           title={t('enrollStudent')}
                         >
-                          <UserCheck size={16} />
+                          <UserCheck size={14} />
                           {t('enroll')}
                         </motion.button>
                       )}
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={(e) => handleEdit(e, student.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
                         title={t('edit')}
                       >
-                        <Edit size={18} />
+                        <Edit size={16} />
                       </motion.button>
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={(e) => handleDelete(e, student.id)}
                         disabled={deletingId === student.id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50"
                         title={t('delete')}
                       >
                         {deletingId === student.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-600"></div>
+                          <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-red-600"></div>
                         ) : (
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         )}
                       </motion.button>
                     </div>

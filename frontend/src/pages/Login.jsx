@@ -30,7 +30,7 @@ export default function Login() {
     
     if (result.success) {
       addToast(t('success'), 'success');
-      navigate('/');
+      navigate('/dashboard');
     } else {
       addToast(result.error || t('error'), 'error');
     }

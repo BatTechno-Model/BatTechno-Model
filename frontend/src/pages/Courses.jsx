@@ -32,23 +32,30 @@ export default function Courses() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <motion.h1
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold text-gray-900"
-        >
-          {t('courses')}
-        </motion.h1>
-        {canCreate && (
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/courses/new')}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <motion.h1
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-bold text-gray-900"
           >
-            <Plus size={20} />
-            {t('createCourse')}
-          </motion.button>
+            {t('courses')}
+          </motion.h1>
+          {canCreate && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/courses/new')}
+              className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+            >
+              <Plus size={20} />
+              {t('createCourse')}
+            </motion.button>
+          )}
+        </div>
+        {!isStudent && (
+          <p className="text-gray-500 text-[10px] leading-relaxed">
+            {t('helpGuide.courses')}
+          </p>
         )}
       </div>
 
@@ -76,46 +83,76 @@ export default function Courses() {
           ) : null}
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={`grid grid-cols-1 ${isStudent ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
           {courses.map((course, i) => (
             <motion.div
               key={course.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate(`/courses/${course.id}`)}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-primary-500 hover:shadow-md transition cursor-pointer"
+              whileHover={!isStudent ? { scale: 1.02 } : {}}
+              whileTap={!isStudent ? { scale: 0.98 } : {}}
+              onClick={!isStudent ? () => navigate(`/courses/${course.id}`) : undefined}
+              className={`bg-white rounded-xl p-6 shadow-sm border border-gray-200 transition ${
+                isStudent 
+                  ? 'cursor-default' 
+                  : 'hover:border-primary-500 hover:shadow-md cursor-pointer'
+              }`}
             >
-              <div className="mb-2">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{course.title}</h3>
-                {course.creator && (
-                  <p className="text-xs text-gray-500">{t('instructor')}: {course.creator.name}</p>
-                )}
-              </div>
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description || t('noDescription')}</p>
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
-                <div className="flex items-center gap-1">
-                  <Users size={16} />
-                  <span>{course._count?.enrollments || 0} {t('students')}</span>
+              {isStudent ? (
+                // Student view: Simple, beautiful display only
+                <div className="text-center">
+                  <div className="mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <BookOpen className="text-white" size={28} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{course.title}</h3>
+                    {course.creator && (
+                      <p className="text-xs text-gray-500">{t('instructor')}: {course.creator.name}</p>
+                    )}
+                  </div>
+                  {course.startDate && course.endDate && (
+                    <div className="flex items-center justify-center gap-1 text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+                      <Clock size={12} />
+                      <span>
+                        {new Date(course.startDate).toLocaleDateString()} - {new Date(course.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar size={16} />
-                  <span>{course._count?.sessions || 0} {t('sessions')}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <FileText size={16} />
-                  <span>{course._count?.assignments || 0} {t('assignments')}</span>
-                </div>
-              </div>
-              {course.startDate && course.endDate && (
-                <div className="flex items-center gap-1 text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100">
-                  <Clock size={12} />
-                  <span>
-                    {new Date(course.startDate).toLocaleDateString()} - {new Date(course.endDate).toLocaleDateString()}
-                  </span>
-                </div>
+              ) : (
+                // Admin/Instructor view: Full details with click
+                <>
+                  <div className="mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">{course.title}</h3>
+                    {course.creator && (
+                      <p className="text-xs text-gray-500">{t('instructor')}: {course.creator.name}</p>
+                    )}
+                  </div>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description || t('noDescription')}</p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Users size={16} />
+                      <span>{course._count?.enrollments || 0} {t('students')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar size={16} />
+                      <span>{course._count?.sessions || 0} {t('sessions')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <FileText size={16} />
+                      <span>{course._count?.assignments || 0} {t('assignments')}</span>
+                    </div>
+                  </div>
+                  {course.startDate && course.endDate && (
+                    <div className="flex items-center gap-1 text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100">
+                      <Clock size={12} />
+                      <span>
+                        {new Date(course.startDate).toLocaleDateString()} - {new Date(course.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </motion.div>
           ))}

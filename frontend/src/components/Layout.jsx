@@ -1,20 +1,56 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, Calendar, FileText, User } from 'lucide-react';
+import { Home, BookOpen, Calendar, FileText, User, HelpCircle, Users, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-const navItems = [
-  { path: '/', icon: Home, label: 'home' },
-  { path: '/courses', icon: BookOpen, label: 'courses' },
-  { path: '/attendance', icon: Calendar, label: 'attendance' },
-  { path: '/assignments', icon: FileText, label: 'assignments' },
-  { path: '/profile', icon: User, label: 'profile' },
-];
+const getNavItems = (userRole) => {
+  const baseItems = [
+    { path: '/dashboard', icon: Home, label: 'home' },
+    { path: '/courses', icon: BookOpen, label: 'courses' },
+    { path: '/quizzes-exams', icon: HelpCircle, label: 'quizzes' },
+    { path: '/attendance', icon: Calendar, label: 'attendance' },
+    { path: '/assignments', icon: FileText, label: 'assignments' },
+    { path: '/profile', icon: User, label: 'profile' },
+  ];
+  
+  // Add admin-specific items
+  if (userRole === 'ADMIN') {
+    // Include both assignments and students for admin
+    return [
+      { path: '/dashboard', icon: Home, label: 'home' },
+      { path: '/courses', icon: BookOpen, label: 'courses' },
+      { path: '/quizzes-exams', icon: HelpCircle, label: 'quizzes' },
+      { path: '/attendance', icon: Calendar, label: 'attendance' },
+      { path: '/sessions/all', icon: Clock, label: 'sessions' },
+      { path: '/assignments', icon: FileText, label: 'assignments' },
+      { path: '/admin/students', icon: Users, label: 'students' },
+      { path: '/profile', icon: User, label: 'profile' },
+    ];
+  }
+  
+  return baseItems;
+};
 
 export default function Layout({ children }) {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const navItems = getNavItems(user?.role);
+
+  // Check if current path matches any nav item (including sub-paths)
+  const isActivePath = (path) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+    // Special handling for sessions to avoid matching /sessions/:courseId
+    if (path === '/sessions/all') {
+      return location.pathname === '/sessions/all';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 safe-bottom">
@@ -31,7 +67,7 @@ export default function Layout({ children }) {
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = isActivePath(item.path);
             
             return (
               <button

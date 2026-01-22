@@ -34,8 +34,15 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      
+      // Don't clear tokens if it's a connection error - server might be temporarily down
+      if (error.message && error.message.includes('Cannot connect to server')) {
+        console.warn('Server connection failed, keeping tokens for retry');
+      } else {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+      
       setUser(null);
     } finally {
       setLoading(false);
@@ -60,7 +67,16 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      const errorMessage = error.message || 'Login failed. Please check your credentials.';
+      
+      let errorMessage = error.message || 'Login failed. Please check your credentials.';
+      
+      // Provide more helpful error messages
+      if (error.message && error.message.includes('Cannot connect to server')) {
+        errorMessage = 'Cannot connect to server. Please make sure the backend server is running on port 5000.';
+      } else if (error.message && error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and ensure the backend server is running.';
+      }
+      
       return { success: false, error: errorMessage };
     }
   };
@@ -81,8 +97,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
-    // Navigate will be handled by the component calling logout
-    window.location.href = '/login';
+    // Redirect to landing page after logout
+    window.location.href = '/';
   };
 
   return (

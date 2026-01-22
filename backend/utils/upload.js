@@ -37,6 +37,22 @@ export const upload = multer({
   fileFilter, // Already allows all file types
 });
 
+// Special upload for avatars with image-only filter
+export const uploadAvatar = multer({
+  storage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_AVATAR_SIZE || '5242880'), // 5MB default for avatars
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images are allowed.'), false);
+    }
+  },
+});
+
 export const getFileUrl = (filename) => {
   return `/api/v1/uploads/${filename}`;
 };

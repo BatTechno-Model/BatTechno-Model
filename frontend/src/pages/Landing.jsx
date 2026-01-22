@@ -83,6 +83,9 @@ export default function Landing() {
           >
             ابدأ الآن
           </button>
+          <p className="mt-4 text-white/70 text-[10px] max-w-md mx-auto leading-relaxed">
+            {t('helpGuide.landing')}
+          </p>
         </motion.div>
       </div>
     </div>

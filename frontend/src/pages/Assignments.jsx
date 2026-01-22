@@ -89,23 +89,31 @@ export default function Assignments() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <motion.h1
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold text-gray-900"
-        >
-          {t('assignments')}
-        </motion.h1>
-        {canCreate && (
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/assignments/create')}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition font-semibold"
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <motion.h1
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-bold text-gray-900"
           >
-            <Plus size={20} />
-            {t('createAssignment')}
-          </motion.button>
+            {t('assignments')}
+          </motion.h1>
+          {canCreate && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/assignments/create')}
+              className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition font-semibold"
+            >
+              <Plus size={20} />
+              {t('createAssignment')}
+            </motion.button>
+          )}
+        </div>
+        {/* Help Guide - Only show for Admin/Instructor */}
+        {!isStudent && (
+          <p className="text-gray-500 text-[10px] leading-relaxed">
+            {t('helpGuide.assignments')}
+          </p>
         )}
       </div>
 

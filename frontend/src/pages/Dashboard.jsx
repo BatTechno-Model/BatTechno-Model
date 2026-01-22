@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import api from '../utils/api';
 import Skeleton from '../components/Skeleton';
-import { BookOpen, Calendar, FileText, TrendingUp, ChevronRight, Clock, Users, CheckCircle, XCircle, User, Mail, Phone, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BookOpen, Calendar, FileText, TrendingUp, ChevronRight, Clock, Users, CheckCircle, XCircle, User, Mail, Phone, X, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -117,6 +117,33 @@ export default function Dashboard() {
 
   const studentsAttendance = studentsAttendanceData?.summaries || [];
 
+  // Fetch students count (for admin/instructor only)
+  const { data: studentsData } = useQuery({
+    queryKey: ['students-count'],
+    queryFn: () => api.getUsers({ role: 'STUDENT' }),
+    enabled: user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR',
+  });
+
+  const studentsCount = studentsData?.users?.length || 0;
+
+  // Fetch available quizzes for students
+  const { data: quizzesData } = useQuery({
+    queryKey: ['my-quizzes'],
+    queryFn: () => api.getMyQuizzes(),
+    enabled: user?.role === 'STUDENT',
+  });
+
+  const availableQuizzes = quizzesData?.quizzes || [];
+
+  // Fetch available exams for students
+  const { data: examsData } = useQuery({
+    queryKey: ['my-exams'],
+    queryFn: () => api.getMyExams(),
+    enabled: user?.role === 'STUDENT',
+  });
+
+  const availableExams = examsData?.exams || [];
+
   // Calculate overall attendance rate for admin/instructor
   const overallAttendanceRate = useMemo(() => {
     if (user?.role !== 'ADMIN' && user?.role !== 'INSTRUCTOR') {
@@ -128,7 +155,7 @@ export default function Dashboard() {
     }
     
     // Calculate average attendance rate across all students
-    const totalRate = studentsAttendance.reduce((sum, item) => sum + (item.attendanceRate || 0), 0);
+    const totalRate = studentsAttendance.reduce((sum, item) => sum + (item.summary?.attendanceRate || 0), 0);
     const averageRate = Math.round(totalRate / studentsAttendance.length);
     
     return averageRate;
@@ -218,14 +245,15 @@ export default function Dashboard() {
         { icon: XCircle, label: t('absentDays'), value: attendanceStats.absentCount, color: 'from-red-500 to-red-600', path: '/attendance' }
       );
     } else {
-      // For admin/instructor, show overall attendance rate
+      // For admin/instructor, show overall attendance rate and students count
       baseStats.push(
+        { icon: Users, label: t('numberOfSubscribers'), value: studentsCount, color: 'from-green-500 to-green-600', path: '/students' },
         { icon: TrendingUp, label: t('attendance'), value: `${overallAttendanceRate}%`, color: 'from-orange-500 to-orange-600', path: '/attendance' }
       );
     }
 
     return baseStats;
-  }, [courses.length, todaySessions.length, pendingAssignments.length, totalAssignments, user?.role, attendanceStats, overallAttendanceRate, t]);
+  }, [courses.length, todaySessions.length, pendingAssignments.length, totalAssignments, user?.role, attendanceStats, overallAttendanceRate, studentsCount, t]);
 
   return (
     <div className="h-[100dvh] h-[100vh] flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -233,7 +261,7 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 p-6 safe-top"
+        className="relative overflow-hidden bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 p-4 safe-top"
       >
         {/* Animated Background Blobs */}
         <div className="absolute inset-0 overflow-hidden">
@@ -248,7 +276,7 @@ export default function Dashboard() {
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"
+            className="absolute -top-20 -right-20 w-48 h-48 bg-white/10 rounded-full blur-3xl"
           />
           <motion.div
             animate={{
@@ -261,16 +289,20 @@ export default function Dashboard() {
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"
+            className="absolute -bottom-20 -left-20 w-60 h-60 bg-white/10 rounded-full blur-3xl"
           />
         </div>
 
         <div className="relative z-10">
+          {/* Help Guide */}
+          <p className="text-white/80 text-[9px] mb-1 max-w-2xl">
+            {t('helpGuide.dashboard')}
+          </p>
           <motion.h1
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl font-bold text-white mb-1"
+            className="text-xl font-bold text-white mb-0.5"
           >
             {t('welcome')}، {user?.name}
           </motion.h1>
@@ -278,7 +310,7 @@ export default function Dashboard() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-primary-100 text-sm"
+            className="text-primary-100 text-xs"
           >
             {t('dashboard')}
           </motion.p>
@@ -287,8 +319,8 @@ export default function Dashboard() {
 
       {/* Stats Cards - Horizontal Scroll on Mobile */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-4">
-          <div className={`grid ${user?.role === 'STUDENT' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'} gap-3 mb-4`}>
+        <div className="px-3 py-3">
+          <div className={`grid ${user?.role === 'STUDENT' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'} gap-2 mb-3`}>
             {stats.map((stat, i) => {
               const Icon = stat.icon;
               return (
@@ -297,21 +329,21 @@ export default function Dashboard() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 200 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => navigate(stat.path)}
-                  className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 cursor-pointer relative overflow-hidden group"
+                  className="bg-white rounded-xl p-3 shadow-md border border-gray-100 cursor-pointer relative overflow-hidden group"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-3 shadow-md`}>
-                    <Icon className="text-white" size={24} />
+                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center mb-2 shadow-sm`}>
+                    <Icon className="text-white" size={18} />
                   </div>
-                  <p className="text-gray-600 text-xs mb-1 font-medium">{stat.label}</p>
+                  <p className="text-gray-600 text-[10px] mb-0.5 font-medium">{stat.label}</p>
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 + i * 0.1 }}
-                    className="text-2xl font-bold text-gray-900"
+                    className="text-lg font-bold text-gray-900"
                   >
                     {stat.value}
                   </motion.p>
@@ -326,16 +358,16 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 mb-4"
+              className="bg-white rounded-xl shadow-md border border-gray-100 p-3 mb-3"
             >
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Clock size={20} className="text-primary-600" />
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <Clock size={16} className="text-primary-600" />
                   {t('todaySessions')}
                 </h2>
-                <ChevronRight size={20} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-400" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {todaySessions.slice(0, 2).map((session, i) => (
                   <motion.div
                     key={session.id}
@@ -344,10 +376,10 @@ export default function Dashboard() {
                     transition={{ delay: 0.8 + i * 0.1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => navigate(`/attendance/${session.id}`)}
-                    className="p-3 bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl border border-primary-200 cursor-pointer hover:shadow-md transition"
+                    className="p-2 bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg border border-primary-200 cursor-pointer hover:shadow-sm transition"
                   >
-                    <p className="font-semibold text-gray-900 text-sm">{session.topic}</p>
-                    <p className="text-xs text-gray-600">{session.startTime} - {session.endTime}</p>
+                    <p className="font-semibold text-gray-900 text-xs">{session.topic}</p>
+                    <p className="text-[10px] text-gray-600">{session.startTime} - {session.endTime}</p>
                   </motion.div>
                 ))}
               </div>
@@ -360,16 +392,16 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 mb-4"
+              className="bg-white rounded-xl shadow-md border border-gray-100 p-3 mb-3"
             >
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <FileText size={20} className="text-purple-600" />
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <FileText size={16} className="text-purple-600" />
                   {user?.role === 'STUDENT' ? t('pendingAssignments') : t('unpublishedAssignments')}
                 </h2>
-                <ChevronRight size={20} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-400" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {pendingAssignments.slice(0, 2).map((assignment, i) => (
                   <motion.div
                     key={assignment.id}
@@ -378,10 +410,106 @@ export default function Dashboard() {
                     transition={{ delay: 1.0 + i * 0.1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => navigate(`/assignments/${assignment.id}`)}
-                    className="p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl border border-purple-200 cursor-pointer hover:shadow-md transition"
+                    className="p-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 cursor-pointer hover:shadow-sm transition"
                   >
-                    <p className="font-semibold text-gray-900 text-sm">{assignment.title}</p>
-                    <p className="text-xs text-gray-600">{new Date(assignment.dueDate).toLocaleDateString()}</p>
+                    <p className="font-semibold text-gray-900 text-xs">{assignment.title}</p>
+                    <p className="text-[10px] text-gray-600">{new Date(assignment.dueDate).toLocaleDateString()}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Available Quizzes (Students Only) */}
+          {user?.role === 'STUDENT' && availableQuizzes.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0 }}
+              className="bg-white rounded-xl shadow-md border border-gray-100 p-3 mb-3"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <HelpCircle size={16} className="text-green-600" />
+                  {t('availableQuizzes')}
+                </h2>
+                <ChevronRight size={16} className="text-gray-400" />
+              </div>
+              <div className="space-y-1.5">
+                {availableQuizzes.slice(0, 3).map((quiz, i) => (
+                  <motion.div
+                    key={quiz.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.1 + i * 0.1 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate(`/quiz/${quiz.id}`)}
+                    className="p-2 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200 cursor-pointer hover:shadow-sm transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 text-xs">{quiz.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            quiz.type === 'PRE' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {quiz.type === 'PRE' ? t('preQuiz') : t('postQuiz')}
+                          </span>
+                          {quiz.session?.topic && (
+                            <span className="text-[10px] text-gray-600">{quiz.session.topic}</span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight size={14} className="text-gray-400" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Available Exams (Students Only) */}
+          {user?.role === 'STUDENT' && availableExams.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2 }}
+              className="bg-white rounded-xl shadow-md border border-gray-100 p-3 mb-3"
+            >
+              <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => navigate('/courses')}>
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <HelpCircle size={16} className="text-purple-600" />
+                  {t('availableExams')}
+                </h2>
+                <ChevronRight size={16} className="text-gray-400" />
+              </div>
+              <div className="space-y-1.5">
+                {availableExams.slice(0, 3).map((exam, i) => (
+                  <motion.div
+                    key={exam.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.3 + i * 0.1 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate(`/exam/${exam.id}`)}
+                    className="p-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 cursor-pointer hover:shadow-sm transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 text-xs">{exam.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            exam.type === 'PRE' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {exam.type === 'PRE' ? t('preExam') : t('postExam')}
+                          </span>
+                          {exam.session?.topic && (
+                            <span className="text-[10px] text-gray-600">{exam.session.topic}</span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight size={14} className="text-gray-400" />
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -394,34 +522,35 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 mb-4"
+              className="bg-white rounded-xl shadow-md border border-gray-100 p-3 mb-3"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Users size={20} className="text-primary-600" />
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <Users size={16} className="text-primary-600" />
                   {t('studentsAttendance')}
                 </h2>
                 <button
                   onClick={() => navigate('/students')}
-                  className="text-primary-600 text-sm font-semibold"
+                  className="text-primary-600 text-xs font-semibold"
                 >
                   {t('viewAll')}
                 </button>
               </div>
 
               {studentsAttendanceLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16" count={5} />
+                <div className="space-y-2">
+                  <Skeleton className="h-12" count={5} />
                 </div>
               ) : studentsAttendance.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="mx-auto text-gray-400 mb-2" size={32} />
-                  <p className="text-gray-600 text-sm">{t('noStudents')}</p>
+                <div className="text-center py-6">
+                  <Users className="mx-auto text-gray-400 mb-2" size={24} />
+                  <p className="text-gray-600 text-xs">{t('noStudents')}</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {studentsAttendance.map((item, i) => {
-                    const { student, attendanceRate } = item;
+                    const { student, summary } = item;
+                    const attendanceRate = summary?.attendanceRate || 0;
                     
                     return (
                       <motion.div
@@ -432,22 +561,22 @@ export default function Dashboard() {
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                         onClick={() => setSelectedStudent(student)}
-                        className="p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 cursor-pointer hover:shadow-md transition flex items-center justify-between"
+                        className="p-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                            <User className="text-primary-600" size={20} />
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                            <User className="text-primary-600" size={14} />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 text-sm">{student.name}</h3>
-                            <p className="text-xs text-gray-600">{student.email}</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 text-xs truncate">{student.name}</h3>
+                            <p className="text-[10px] text-gray-600 truncate">{student.email}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className={`text-lg font-bold ${attendanceRate >= 80 ? 'text-green-600' : attendanceRate >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        <div className="text-right ml-2">
+                          <div className={`text-sm font-bold ${attendanceRate >= 80 ? 'text-green-600' : attendanceRate >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
                             {attendanceRate}%
                           </div>
-                          <div className="text-xs text-gray-500">{t('attendanceRate')}</div>
+                          <div className="text-[10px] text-gray-500">{t('attendanceRate')}</div>
                         </div>
                       </motion.div>
                     );
@@ -462,57 +591,57 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: user?.role === 'ADMIN' ? 1.3 : 1.1 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4"
+            className="bg-white rounded-xl shadow-md border border-gray-100 p-3"
           >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <BookOpen size={20} className="text-blue-600" />
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                <BookOpen size={16} className="text-blue-600" />
                 {t('myCourses')}
               </h2>
               <button
                 onClick={() => navigate('/courses')}
-                className="text-primary-600 text-sm font-semibold"
+                className="text-primary-600 text-xs font-semibold"
               >
                 {t('viewAll')}
               </button>
             </div>
 
             {coursesLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-20" count={2} />
+              <div className="space-y-2">
+                <Skeleton className="h-16" count={2} />
               </div>
             ) : courses.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="mx-auto text-gray-400 mb-2" size={32} />
-                <p className="text-gray-600 text-sm">{t('noCourses')}</p>
+              <div className="text-center py-6">
+                <BookOpen className="mx-auto text-gray-400 mb-2" size={24} />
+                <p className="text-gray-600 text-xs">{t('noCourses')}</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {courses.slice(0, 3).map((course, i) => (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1.2 + i * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => navigate(`/courses/${course.id}`)}
-                    className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 cursor-pointer hover:shadow-md transition flex items-center justify-between"
+                    className="p-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
                   >
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900 text-sm mb-1">{course.title}</p>
-                      <div className="flex gap-3 text-xs text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <Users size={12} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-xs mb-0.5 truncate">{course.title}</p>
+                      <div className="flex gap-2 text-[10px] text-gray-600">
+                        <span className="flex items-center gap-0.5">
+                          <Users size={10} />
                           {course._count?.enrollments || 0}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} />
+                        <span className="flex items-center gap-0.5">
+                          <Calendar size={10} />
                           {course._count?.sessions || 0}
                         </span>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-gray-400" />
+                    <ChevronRight size={14} className="text-gray-400 ml-2 flex-shrink-0" />
                   </motion.div>
                 ))}
               </div>
@@ -575,6 +704,7 @@ export default function Dashboard() {
                       {/* Overall Stats */}
                       {studentsAttendance.find(s => s.student.id === selectedStudent.id) && (() => {
                         const overall = studentsAttendance.find(s => s.student.id === selectedStudent.id);
+                        const summary = overall?.summary || {};
                         return (
                           <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-4 border border-primary-200">
                             <h3 className="font-semibold text-gray-900 mb-3">{t('overallStatistics')}</h3>
@@ -584,39 +714,39 @@ export default function Dashboard() {
                                   <CheckCircle className="text-green-600" size={16} />
                                   <span className="text-xs text-gray-600">{t('present')}</span>
                                 </div>
-                                <div className="text-xl font-bold text-green-600">{overall.presentCount}</div>
+                                <div className="text-xl font-bold text-green-600">{summary.presentCount || 0}</div>
                               </div>
                               <div className="bg-white rounded-lg p-3 border border-red-200">
                                 <div className="flex items-center gap-2 mb-1">
                                   <XCircle className="text-red-600" size={16} />
                                   <span className="text-xs text-gray-600">{t('absent')}</span>
                                 </div>
-                                <div className="text-xl font-bold text-red-600">{overall.absentCount}</div>
+                                <div className="text-xl font-bold text-red-600">{summary.absentCount || 0}</div>
                               </div>
                               <div className="bg-white rounded-lg p-3 border border-yellow-200">
                                 <div className="flex items-center gap-2 mb-1">
                                   <Clock className="text-yellow-600" size={16} />
                                   <span className="text-xs text-gray-600">{t('late')}</span>
                                 </div>
-                                <div className="text-xl font-bold text-yellow-600">{overall.lateCount}</div>
+                                <div className="text-xl font-bold text-yellow-600">{summary.lateCount || 0}</div>
                               </div>
                               <div className="bg-white rounded-lg p-3 border border-blue-200">
                                 <div className="flex items-center gap-2 mb-1">
                                   <Calendar className="text-blue-600" size={16} />
                                   <span className="text-xs text-gray-600">{t('excused')}</span>
                                 </div>
-                                <div className="text-xl font-bold text-blue-600">{overall.excusedCount}</div>
+                                <div className="text-xl font-bold text-blue-600">{summary.excusedCount || 0}</div>
                               </div>
                             </div>
                             <div className="mt-4 pt-4 border-t border-primary-200">
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600">{t('totalSessions')}:</span>
-                                <span className="font-bold text-gray-900">{overall.totalSessions}</span>
+                                <span className="font-bold text-gray-900">{summary.totalSessions || 0}</span>
                               </div>
                               <div className="flex items-center justify-between mt-2">
                                 <span className="text-sm text-gray-600">{t('attendanceRate')}:</span>
-                                <span className={`font-bold text-lg ${overall.attendanceRate >= 80 ? 'text-green-600' : overall.attendanceRate >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                  {overall.attendanceRate}%
+                                <span className={`font-bold text-lg ${(summary.attendanceRate || 0) >= 80 ? 'text-green-600' : (summary.attendanceRate || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                  {summary.attendanceRate || 0}%
                                 </span>
                               </div>
                             </div>

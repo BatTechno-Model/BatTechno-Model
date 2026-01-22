@@ -11,10 +11,12 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
+import EditCourse from './pages/EditCourse';
 import Students from './pages/Students';
 import CreateStudent from './pages/CreateStudent';
 import EditStudent from './pages/EditStudent';
 import Sessions from './pages/Sessions';
+import AllSessions from './pages/AllSessions';
 import CreateSession from './pages/CreateSession';
 import EditSession from './pages/EditSession';
 import AttendanceSheet from './pages/AttendanceSheet';
@@ -26,6 +28,18 @@ import EditAssignment from './pages/EditAssignment';
 import SubmitAssignment from './pages/SubmitAssignment';
 import ReviewSubmission from './pages/ReviewSubmission';
 import Profile from './pages/Profile';
+import TakeQuiz from './pages/TakeQuiz';
+import QuizResult from './pages/QuizResult';
+import QuizResults from './pages/QuizResults';
+import AllQuizResults from './pages/AllQuizResults';
+import QuizAnalytics from './pages/QuizAnalytics';
+import TakeExam from './pages/TakeExam';
+import ExamResult from './pages/ExamResult';
+import ExamAnalytics from './pages/ExamAnalytics';
+import QuizzesExams from './pages/QuizzesExams';
+import AdminStudentsDirectory from './pages/AdminStudentsDirectory';
+import AdminStudentReport from './pages/AdminStudentReport';
+import AdminSubscribers from './pages/AdminSubscribers';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -40,12 +54,15 @@ function AppRoutes() {
 
   return (
     <Routes>
+        {/* Public routes - Landing page is the default home */}
+        <Route path="/" element={<Landing />} />
         <Route path="/landing" element={<Landing />} />
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
+        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
         
+        {/* Protected routes - Dashboard */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Layout>
@@ -61,6 +78,17 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Courses />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/courses/:id/edit"
+          element={
+            <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
+              <Layout>
+                <EditCourse />
               </Layout>
             </ProtectedRoute>
           }
@@ -105,6 +133,17 @@ function AppRoutes() {
             <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
               <Layout>
                 <EditStudent />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/sessions/all"
+          element={
+            <ProtectedRoute requireRole={['ADMIN']}>
+              <Layout>
+                <AllSessions />
               </Layout>
             </ProtectedRoute>
           }
@@ -160,6 +199,17 @@ function AppRoutes() {
             <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
               <Layout>
                 <AttendanceSheet />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/quizzes-exams"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <QuizzesExams />
               </Layout>
             </ProtectedRoute>
           }
@@ -253,6 +303,150 @@ function AppRoutes() {
           }
         />
         
+        <Route
+          path="/quiz/:quizId"
+          element={
+            <ProtectedRoute requireRole={['STUDENT']}>
+              <Layout>
+                <TakeQuiz />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/quiz-result/:attemptId"
+          element={
+            <ProtectedRoute requireRole={['STUDENT']}>
+              <Layout>
+                <QuizResult />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/quiz/:quizId/results"
+          element={
+            <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
+              <Layout>
+                <QuizResults />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/quiz-results/all"
+          element={
+            <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
+              <Layout>
+                <AllQuizResults />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/quiz-analytics/:sessionId"
+          element={
+            <ProtectedRoute requireRole={['ADMIN']}>
+              <Layout>
+                <QuizAnalytics />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/quiz-analytics/course/:courseId"
+          element={
+            <ProtectedRoute requireRole={['ADMIN']}>
+              <Layout>
+                <QuizAnalytics />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/exam/:examId"
+          element={
+            <ProtectedRoute requireRole={['STUDENT']}>
+              <Layout>
+                <TakeExam />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/exam-result/:attemptId"
+          element={
+            <ProtectedRoute requireRole={['STUDENT']}>
+              <Layout>
+                <ExamResult />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/exam-analytics/:sessionId"
+          element={
+            <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
+              <Layout>
+                <ExamAnalytics />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/exam-analytics/course/:courseId"
+          element={
+            <ProtectedRoute requireRole={['ADMIN', 'INSTRUCTOR']}>
+              <Layout>
+                <ExamAnalytics />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/admin/students"
+          element={
+            <ProtectedRoute requireRole={['ADMIN']}>
+              <Layout>
+                <AdminStudentsDirectory />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/admin/students/:studentId/report"
+          element={
+            <ProtectedRoute requireRole={['ADMIN']}>
+              <Layout>
+                <AdminStudentReport />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/admin/subscribers"
+          element={
+            <ProtectedRoute requireRole={['ADMIN']}>
+              <Layout>
+                <AdminSubscribers />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Redirect unknown routes to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
