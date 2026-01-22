@@ -41,6 +41,18 @@ const resources = {
       search: 'بحث',
       filter: 'تصفية',
       
+      // Landing Page
+      platformName: 'BatTechno Model',
+      platformTitle: 'منصة BatTechno التعليمية',
+      platformDescription: 'منصة متكاملة لإدارة الدورات التعليمية، الحضور، والواجبات',
+      getStarted: 'ابدأ الآن',
+      featureCourseManagement: 'إدارة الدورات',
+      featureCourseManagementDesc: 'إنشاء وإدارة الدورات التعليمية بسهولة',
+      featureAttendance: 'تسجيل الحضور',
+      featureAttendanceDesc: 'نظام متقدم لتسجيل ومتابعة حضور الطلاب',
+      featureAssignments: 'تقييم الواجبات',
+      featureAssignmentsDesc: 'مراجعة وتقييم واجبات الطلاب بمعايير واضحة',
+      
       // Help Guide
       helpGuide: {
         landing: 'للبدء: اضغط على "ابدأ الآن" لإنشاء حساب، أو "تسجيل الدخول" إذا كان لديك حساب بالفعل',
@@ -540,6 +552,18 @@ const resources = {
       success: 'Success',
       search: 'Search',
       filter: 'Filter',
+      
+      // Landing Page
+      platformName: 'BatTechno Model',
+      platformTitle: 'BatTechno Educational Platform',
+      platformDescription: 'An integrated platform for managing educational courses, attendance, and assignments',
+      getStarted: 'Get Started',
+      featureCourseManagement: 'Course Management',
+      featureCourseManagementDesc: 'Create and manage educational courses with ease',
+      featureAttendance: 'Attendance Tracking',
+      featureAttendanceDesc: 'Advanced system for recording and tracking student attendance',
+      featureAssignments: 'Assignment Evaluation',
+      featureAssignmentsDesc: 'Review and evaluate student assignments with clear criteria',
       
       // Help Guide
       helpGuide: {

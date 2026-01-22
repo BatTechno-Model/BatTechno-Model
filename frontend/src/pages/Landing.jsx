@@ -22,7 +22,7 @@ export default function Landing() {
           animate={{ opacity: 1, y: 0 }}
           className="flex justify-between items-center mb-12"
         >
-          <h1 className="text-3xl font-bold text-white">BatTechno Model</h1>
+          <h1 className="text-3xl font-bold text-white">{t('platformName')}</h1>
           <div className="flex gap-4">
             <button
               onClick={toggleLanguage}
@@ -45,17 +45,17 @@ export default function Landing() {
           transition={{ delay: 0.2 }}
           className="text-center text-white mb-16"
         >
-          <h2 className="text-5xl font-bold mb-4">منصة BatTechno التعليمية</h2>
+          <h2 className="text-5xl font-bold mb-4">{t('platformTitle')}</h2>
           <p className="text-xl opacity-90 max-w-2xl mx-auto">
-            منصة متكاملة لإدارة الدورات التعليمية، الحضور، والواجبات
+            {t('platformDescription')}
           </p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           {[
-            { icon: BookOpen, title: 'إدارة الدورات', desc: 'إنشاء وإدارة الدورات التعليمية بسهولة' },
-            { icon: Users, title: 'تسجيل الحضور', desc: 'نظام متقدم لتسجيل ومتابعة حضور الطلاب' },
-            { icon: Award, title: 'تقييم الواجبات', desc: 'مراجعة وتقييم واجبات الطلاب بمعايير واضحة' },
+            { icon: BookOpen, title: t('featureCourseManagement'), desc: t('featureCourseManagementDesc') },
+            { icon: Users, title: t('featureAttendance'), desc: t('featureAttendanceDesc') },
+            { icon: Award, title: t('featureAssignments'), desc: t('featureAssignmentsDesc') },
           ].map((feature, i) => (
             <motion.div
               key={i}
@@ -81,7 +81,7 @@ export default function Landing() {
             onClick={() => navigate('/register')}
             className="px-8 py-4 bg-white text-primary-600 rounded-lg font-semibold text-lg hover:bg-gray-100 transition shadow-lg"
           >
-            ابدأ الآن
+            {t('getStarted')}
           </button>
           <p className="mt-4 text-white/70 text-[10px] max-w-md mx-auto leading-relaxed">
             {t('helpGuide.landing')}
