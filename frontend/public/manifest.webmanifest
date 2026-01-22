@@ -1,0 +1,16 @@
+{
+  "name": "BatTechno Model",
+  "short_name": "BatTechno",
+  "description": "BatTechno Learning Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

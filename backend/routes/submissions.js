@@ -3,7 +3,8 @@ import prisma from '../config/database.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { submissionSchema } from '../utils/validation.js';
 import { upload } from '../utils/upload.js';
-import { getFileUrl } from '../utils/upload.js';
+import { getFileUrl, getFilePath } from '../utils/upload.js';
+import fs from 'fs';
 
 const router = express.Router();
 
@@ -107,6 +108,13 @@ router.post('/', authenticateToken, requireRole('STUDENT'), upload.array('files'
     const { assignmentId, note, assets } = req.body;
     const studentId = req.user.id;
 
+    console.log('Create submission request:', { 
+      assignmentId, 
+      studentId,
+      filesCount: req.files?.length || 0,
+      files: req.files?.map(f => ({ name: f.originalname, size: f.size }))
+    });
+
     // Parse assets if provided as JSON string
     let parsedAssets = [];
     if (assets) {
@@ -116,6 +124,12 @@ router.post('/', authenticateToken, requireRole('STUDENT'), upload.array('files'
     // Add uploaded files to assets
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
+        // Verify file was saved
+        const filePath = getFilePath(file.filename);
+        if (!fs.existsSync(filePath)) {
+          console.error('File upload failed: File not saved to disk', filePath);
+          throw new Error(`File upload failed: ${file.originalname} was not saved`);
+        }
         parsedAssets.push({
           type: 'FILE',
           url: getFileUrl(file.filename),
@@ -144,10 +158,19 @@ router.post('/', authenticateToken, requireRole('STUDENT'), upload.array('files'
       },
     });
 
+    console.log('Submission created successfully:', submission.id);
     res.status(201).json({ submission });
   } catch (error) {
     console.error('Create submission error:', error);
-    res.status(500).json({ error: 'Failed to create submission' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
+    res.status(500).json({ 
+      error: 'Failed to create submission',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 

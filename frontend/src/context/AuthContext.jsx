@@ -23,7 +23,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        console.log('No access token found');
+        // Only log in development mode
+        if (import.meta.env.DEV) {
+          console.log('No access token found');
+        }
         setLoading(false);
         return;
       }

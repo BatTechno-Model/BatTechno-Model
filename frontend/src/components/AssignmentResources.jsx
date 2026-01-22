@@ -64,6 +64,21 @@ export default function AssignmentResources({ assignmentId, canManage = false })
     },
   });
 
+  const handleDownload = async (resource) => {
+    if (resource.type === 'FILE') {
+      try {
+        await api.downloadAssignmentResource(resource.id, resource.name);
+        addToast(t('fileDownloaded') || 'تم تحميل الملف بنجاح', 'success');
+      } catch (error) {
+        console.error('Download error:', error);
+        addToast(error.message || t('downloadFailed') || 'فشل تحميل الملف', 'error');
+      }
+    } else {
+      // For links, open in new tab
+      window.open(resource.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (resourceType === 'LINK' && !resourceUrl) {
@@ -251,29 +266,24 @@ export default function AssignmentResources({ assignmentId, canManage = false })
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {resource.type === 'FILE' ? (
-                  <a
-                    href={resource.url}
-                    download
-                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
-                  >
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleDownload(resource)}
+                  className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
+                  title={resource.type === 'FILE' ? (t('download') || 'تحميل') : (t('openLink') || 'فتح الرابط')}
+                >
+                  {resource.type === 'FILE' ? (
                     <Download size={18} />
-                  </a>
-                ) : (
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
-                  >
+                  ) : (
                     <ExternalLink size={18} />
-                  </a>
-                )}
+                  )}
+                </motion.button>
                 {canManage && (
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => deleteResource(resource.id)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                    title={t('delete') || 'حذف'}
                   >
                     <Trash2 size={18} />
                   </motion.button>

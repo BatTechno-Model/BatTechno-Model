@@ -420,6 +420,52 @@ export const api = {
     method: 'DELETE',
   }),
   
+  downloadAssignmentResource: (id, resourceName) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      return Promise.reject(new Error('Authentication required'));
+    }
+    
+    return fetch(`${API_URL}/assignment-resources/${id}/download`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then(async (res) => {
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to download file' }));
+        throw new ApiError(error.error || 'Failed to download file', res.status);
+      }
+      
+      // Get filename from Content-Disposition header
+      const contentDisposition = res.headers.get('Content-Disposition');
+      let filename = resourceName || `resource-${id}`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+          // Decode URI component if needed
+          try {
+            filename = decodeURIComponent(filename);
+          } catch (e) {
+            // If decoding fails, use as is
+          }
+        }
+      }
+      
+      return { blob: await res.blob(), filename };
+    }).then(({ blob, filename }) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    });
+  },
+  
   // Submissions
   getSubmissions: (assignmentId) => {
     if (!assignmentId) {

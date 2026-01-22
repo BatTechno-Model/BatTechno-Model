@@ -34,7 +34,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
   
   // Log other unhandled rejections for debugging (only in development)
-  if (process.env.NODE_ENV === 'development' && !isExtensionError) {
+  if (import.meta.env.DEV && !isExtensionError) {
     console.error('Unhandled promise rejection:', error);
   }
 });
@@ -65,7 +65,12 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <App />
     </BrowserRouter>
   </QueryClientProvider>

@@ -50,14 +50,32 @@ app.use(
     },
   })
 );
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Authorization'],
-  })
-);
+// CORS configuration - supports multiple origins in production
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = process.env.FRONTEND_URL 
+      ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+      : ['http://localhost:5173'];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is allowed
+    if (allowedOrigins.some(allowed => origin === allowed || origin.includes(allowed))) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked origin:', origin, 'Allowed origins:', allowedOrigins);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Authorization', 'Content-Disposition', 'Content-Type', 'Content-Length'],
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting - General API limit
 const limiter = rateLimit({
@@ -87,25 +105,52 @@ const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// CORS helper function for file serving
+const getCorsOrigin = (req) => {
+  const requestOrigin = req.headers.origin;
+  const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+  
+  // In production, check if request origin matches allowed origin
+  if (requestOrigin && (requestOrigin === allowedOrigin || requestOrigin.includes(allowedOrigin))) {
+    return requestOrigin;
+  }
+  
+  // Fallback to allowed origin
+  return allowedOrigin;
+};
+
 app.use('/api/v1/uploads', (req, res, next) => {
-  // Set CORS headers for static files
-  const origin = process.env.FRONTEND_URL || 'http://localhost:5173';
+  // Set CORS headers for static files dynamically
+  const origin = getCorsOrigin(req);
   res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
   next();
 }, express.static(uploadDir, {
-  setHeaders: (res, path) => {
+  setHeaders: (res, filePath) => {
     // Set proper content type for images
-    if (path.endsWith('.png')) {
+    if (filePath.endsWith('.png')) {
       res.setHeader('Content-Type', 'image/png');
-    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
       res.setHeader('Content-Type', 'image/jpeg');
-    } else if (path.endsWith('.gif')) {
+    } else if (filePath.endsWith('.gif')) {
       res.setHeader('Content-Type', 'image/gif');
-    } else if (path.endsWith('.webp')) {
+    } else if (filePath.endsWith('.webp')) {
       res.setHeader('Content-Type', 'image/webp');
     }
+    // Ensure CORS headers are set for all file types
+    const origin = getCorsOrigin({ headers: res.req?.headers || {} });
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   },
 }));
 
