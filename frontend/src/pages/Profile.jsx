@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Globe, Save, Edit2, Mail, Phone, MapPin, GraduationCap, Briefcase, Link as LinkIcon, ExternalLink, Camera, User as UserIcon, LogOut } from 'lucide-react';
+import { Globe, Save, Edit2, Mail, Phone, MapPin, GraduationCap, Briefcase, Link as LinkIcon, ExternalLink, User as UserIcon, LogOut } from 'lucide-react';
 import api from '../utils/api';
 import { useToast } from '../context/ToastContext';
 import AutocompleteInput from '../components/AutocompleteInput';
@@ -30,7 +30,6 @@ export default function Profile() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(null);
 
   const { data: profileData, isLoading } = useQuery({
     queryKey: ['profile'],
@@ -54,78 +53,7 @@ export default function Profile() {
     },
   });
 
-  const uploadAvatarMutation = useMutation({
-    mutationFn: async (file) => {
-      try {
-        const response = await api.uploadAvatar(file);
-        return response;
-      } catch (error) {
-        console.error('Avatar upload error:', error);
-        throw error;
-      }
-    },
-    onSuccess: (response) => {
-      // Update the profile data immediately with the new avatar
-      queryClient.setQueryData(['profile'], (oldData) => {
-        if (oldData && response?.data) {
-          return { ...oldData, avatar: response.data.avatar };
-        }
-        return oldData;
-      });
-      // Also invalidate to refetch fresh data
-      queryClient.invalidateQueries(['profile']);
-      addToast(t('avatarUploaded') || 'Avatar uploaded successfully', 'success');
-      setAvatarPreview(null); // Clear preview after successful upload
-    },
-    onError: (error) => {
-      console.error('Avatar upload mutation error:', error);
-      const errorMessage = error?.message || error?.error || t('avatarUploadFailed') || 'Failed to upload avatar';
-      addToast(errorMessage, 'error');
-      setAvatarPreview(null); // Clear preview on error
-    },
-  });
-
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      addToast(t('invalidImageType') || 'Invalid image type', 'error');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      addToast(t('imageTooLarge') || 'Image too large (max 5MB)', 'error');
-      return;
-    }
-
-    // Create preview
-    try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result);
-      };
-      reader.onerror = () => {
-        console.error('Error reading file for preview');
-        addToast('Error reading image file', 'error');
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Error creating preview:', error);
-      addToast('Error creating preview', 'error');
-      return;
-    }
-
-    // Upload the file
-    try {
-      await uploadAvatarMutation.mutateAsync(file);
-    } catch (error) {
-      // Error is already handled in onError callback
-      console.error('Upload failed:', error);
-    }
-  };
+  // Avatar upload removed - text-only assignments only
 
   const {
     register,
@@ -294,40 +222,21 @@ export default function Profile() {
         <div className="max-w-2xl mx-auto px-3 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative">
-              {(avatarPreview || profileData?.avatar) ? (
+              {profileData?.avatar ? (
                 <img
-                  src={avatarPreview || getImageUrl(profileData.avatar)}
+                  src={getImageUrl(profileData.avatar)}
                   alt={fullName4 || user?.name}
                   className="w-10 h-10 rounded-full object-cover border-2 border-primary-200"
                   crossOrigin="anonymous"
                   onError={(e) => {
-                    console.error('Failed to load avatar in header:', profileData.avatar, 'URL:', getImageUrl(profileData.avatar));
                     e.target.style.display = 'none';
                     const fallback = e.target.nextElementSibling;
                     if (fallback) fallback.style.display = 'flex';
                   }}
                 />
-              ) : null}
-              {!avatarPreview && !profileData?.avatar && (
+              ) : (
                 <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold text-sm">
                   {getInitials(fullName4 || user?.name)}
-                </div>
-              )}
-              {isEditMode && (
-                <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-700 transition shadow-md z-10">
-                  <Camera size={12} className="text-white" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                    disabled={uploadAvatarMutation.isLoading}
-                  />
-                </label>
-              )}
-              {uploadAvatarMutation.isLoading && (
-                <div className="absolute inset-0 rounded-full bg-black bg-opacity-50 flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
             </div>
