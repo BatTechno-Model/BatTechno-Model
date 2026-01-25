@@ -209,29 +209,39 @@ async function request(endpoint, options = {}, retryCount = 0) {
     }
 
     if (!response.ok) {
-      const errorMessage = typeof data === 'object' 
-        ? (data.error || data.message || 'Request failed')
-        : (data || 'Request failed');
-      const fullMessage = typeof data === 'object' && data.command 
-        ? `${errorMessage}\n\nRun: ${data.command}` 
-        : errorMessage;
+      let errorMessage = 'Request failed';
+      
+      // Handle different response types
+      if (typeof data === 'object' && data !== null) {
+        errorMessage = data.error || data.message || 'Request failed';
+        
+        // Show alert for migration errors
+        if (data.error === 'Database migration required' && data.command) {
+          alert(`⚠️ ${errorMessage}\n\nPlease run this command in your terminal:\n\n${data.command}\n\nThen restart your backend server.`);
+        }
+        
+        // Include error details in the error message for better debugging
+        if (data.command) {
+          errorMessage = `${errorMessage}\n\nRun: ${data.command}`;
+        }
+        if (data.details) {
+          const detailsStr = typeof data.details === 'object' 
+            ? JSON.stringify(data.details, null, 2) 
+            : String(data.details);
+          errorMessage = `${errorMessage}${detailsStr ? '\n' + detailsStr : ''}`;
+        }
+      } else if (typeof data === 'string') {
+        errorMessage = data;
+      }
       
       console.error('API Error:', {
         status: response.status,
         endpoint,
         error: errorMessage,
-        message: data.message,
-        command: data.command,
-        details: data.details,
-        fullData: data,
+        data: data,
       });
       
-      // Show alert for migration errors
-      if (data.error === 'Database migration required' && data.command) {
-        alert(`⚠️ ${errorMessage}\n\nPlease run this command in your terminal:\n\n${data.command}\n\nThen restart your backend server.`);
-      }
-      
-      throw new ApiError(fullMessage, response.status);
+      throw new ApiError(errorMessage, response.status);
     }
 
     return data;
@@ -249,7 +259,14 @@ async function request(endpoint, options = {}, retryCount = 0) {
       }
     }
     
-    throw new ApiError(error.message || 'Network error', 0);
+    // Ensure we always throw an ApiError instance, not a plain object
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : (typeof error === 'object' && error !== null 
+          ? (error.message || error.error || JSON.stringify(error))
+          : String(error));
+    
+    throw new ApiError(errorMessage || 'Network error', 0);
   }
 }
 
@@ -389,82 +406,20 @@ export const api = {
   // Assignment Resources
   getAssignmentResources: (assignmentId) => request(`/assignment-resources/assignment/${assignmentId}`),
   
-  createAssignmentResource: (data, file) => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      console.error('No access token found for creating assignment resource');
-      return Promise.reject(new Error('Authentication required'));
-    }
-    
-    const formData = new FormData();
-    formData.append('assignmentId', data.assignmentId);
-    formData.append('type', data.type);
-    formData.append('name', data.name || '');
-    if (data.type === 'LINK') {
-      formData.append('url', data.url || '');
-    }
-    if (file) {
-      formData.append('file', file);
-    }
-    
-    console.log('Creating assignment resource:', { assignmentId: data.assignmentId, type: data.type, hasFile: !!file, token: token ? 'yes' : 'no' });
-    
+  createAssignmentResource: (data) => {
     return request('/assignment-resources', {
       method: 'POST',
-      body: formData,
-      // Headers will be set automatically by request() function (including Authorization)
+      body: {
+        assignmentId: data.assignmentId,
+        name: data.name,
+        url: data.url,
+      },
     });
   },
   
   deleteAssignmentResource: (id) => request(`/assignment-resources/${id}`, {
     method: 'DELETE',
   }),
-  
-  downloadAssignmentResource: (id, resourceName) => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      return Promise.reject(new Error('Authentication required'));
-    }
-    
-    return fetch(`${API_URL}/assignment-resources/${id}/download`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    }).then(async (res) => {
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ error: 'Failed to download file' }));
-        throw new ApiError(error.error || 'Failed to download file', res.status);
-      }
-      
-      // Get filename from Content-Disposition header
-      const contentDisposition = res.headers.get('Content-Disposition');
-      let filename = resourceName || `resource-${id}`;
-      
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, '');
-          // Decode URI component if needed
-          try {
-            filename = decodeURIComponent(filename);
-          } catch (e) {
-            // If decoding fails, use as is
-          }
-        }
-      }
-      
-      return { blob: await res.blob(), filename };
-    }).then(({ blob, filename }) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    });
-  },
   
   // Submissions
   getSubmissions: (assignmentId) => {
@@ -477,38 +432,22 @@ export const api = {
   
   getSubmission: (id) => request(`/submissions/${id}`),
   
-  createSubmission: (assignmentId, data, files) => {
+  createSubmission: (assignmentId, data) => {
     if (!assignmentId) {
       console.error('createSubmission called without assignmentId');
       return Promise.reject(new Error('Assignment ID is required'));
     }
     
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      console.error('No access token found for submission');
-      return Promise.reject(new Error('Authentication required'));
+    if (!data.note || data.note.trim().length === 0) {
+      return Promise.reject(new Error('Submission text is required'));
     }
-    
-    const formData = new FormData();
-    formData.append('assignmentId', assignmentId);
-    formData.append('note', data.note || '');
-    formData.append('assets', JSON.stringify(data.assets || []));
-    
-    if (files && files.length > 0) {
-      console.log(`Adding ${files.length} files to submission`);
-      files.forEach((file) => {
-        console.log(`Adding file: ${file.name} (${file.type}, ${file.size} bytes)`);
-        formData.append('files', file);
-      });
-    }
-    
-    console.log('Creating submission for assignment:', assignmentId, 'with token:', token ? 'yes' : 'no');
-    console.log('FormData entries:', Array.from(formData.entries()).map(([k, v]) => [k, v instanceof File ? `${v.name} (${v.size} bytes)` : v]));
     
     return request('/submissions', {
       method: 'POST',
-      body: formData,
-      // Headers will be set automatically by request() function
+      body: {
+        assignmentId,
+        note: data.note.trim(),
+      },
     });
   },
   
@@ -730,37 +669,6 @@ export const api = {
   
   getProfileOptions: () => request('/profile/options'),
   
-  uploadAvatar: (file) => {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    const token = localStorage.getItem('accessToken');
-    return fetch(`${API_URL}/profile/avatar`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-    }).then(async (res) => {
-      if (!res.ok) {
-        let errorMessage = 'Failed to upload avatar';
-        try {
-          const error = await res.json();
-          errorMessage = error.error || error.message || errorMessage;
-        } catch (e) {
-          // If response is not JSON, use status text
-          errorMessage = res.statusText || errorMessage;
-        }
-        throw new ApiError(errorMessage, res.status);
-      }
-      return res.json();
-    }).catch((error) => {
-      // Ensure we always throw an ApiError
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      throw new ApiError(error.message || 'Failed to upload avatar', error.status || 500);
-    });
-  },
   
   // Suggestions
   getSuggestions: (key, q, country) => {

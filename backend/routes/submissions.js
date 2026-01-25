@@ -2,9 +2,6 @@ import express from 'express';
 import prisma from '../config/database.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { submissionSchema } from '../utils/validation.js';
-import { upload } from '../utils/upload.js';
-import { getFileUrl, getFilePath } from '../utils/upload.js';
-import fs from 'fs';
 
 const router = express.Router();
 
@@ -101,51 +98,27 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Create submission (with file uploads)
-// Allow up to 20 files of any type
-router.post('/', authenticateToken, requireRole('STUDENT'), upload.array('files', 20), async (req, res) => {
+// Create submission (text-only)
+router.post('/', authenticateToken, requireRole('STUDENT'), async (req, res) => {
   try {
-    const { assignmentId, note, assets } = req.body;
+    const { assignmentId, note } = req.body;
     const studentId = req.user.id;
+
+    if (!note || note.trim().length === 0) {
+      return res.status(400).json({ error: 'Submission text is required' });
+    }
 
     console.log('Create submission request:', { 
       assignmentId, 
       studentId,
-      filesCount: req.files?.length || 0,
-      files: req.files?.map(f => ({ name: f.originalname, size: f.size }))
+      noteLength: note?.length || 0
     });
-
-    // Parse assets if provided as JSON string
-    let parsedAssets = [];
-    if (assets) {
-      parsedAssets = typeof assets === 'string' ? JSON.parse(assets) : assets;
-    }
-
-    // Add uploaded files to assets
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        // Verify file was saved
-        const filePath = getFilePath(file.filename);
-        if (!fs.existsSync(filePath)) {
-          console.error('File upload failed: File not saved to disk', filePath);
-          throw new Error(`File upload failed: ${file.originalname} was not saved`);
-        }
-        parsedAssets.push({
-          type: 'FILE',
-          url: getFileUrl(file.filename),
-          name: file.originalname,
-        });
-      });
-    }
 
     const submission = await prisma.submission.create({
       data: {
         assignmentId,
         studentId,
-        note,
-        assets: {
-          create: parsedAssets,
-        },
+        note: note.trim(),
       },
       include: {
         assignment: {

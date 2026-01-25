@@ -100,13 +100,13 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Serve uploaded files with CORS headers
+// Text-only assignments - no file uploads needed
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// CORS helper function for file serving
+// CORS helper function for file serving (backward compatibility)
 const getCorsOrigin = (req) => {
   const requestOrigin = req.headers.origin;
   const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -120,6 +120,7 @@ const getCorsOrigin = (req) => {
   return allowedOrigin;
 };
 
+// Serve old local files if they exist (backward compatibility)
 app.use('/api/v1/uploads', (req, res, next) => {
   // Set CORS headers for static files dynamically
   const origin = getCorsOrigin(req);

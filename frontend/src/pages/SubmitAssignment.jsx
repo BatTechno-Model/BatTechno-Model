@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Upload, Link as LinkIcon, X, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 
 export default function SubmitAssignment() {
   const { t } = useTranslation();
@@ -15,15 +15,13 @@ export default function SubmitAssignment() {
   const queryClient = useQueryClient();
 
   const [note, setNote] = useState('');
-  const [files, setFiles] = useState([]);
-  const [links, setLinks] = useState([{ type: 'LINK', url: '', name: '' }]);
 
   const { mutate: submitAssignment, isPending } = useMutation({
     mutationFn: (data) => {
       if (!id) {
         throw new Error('Assignment ID is required');
       }
-      return api.createSubmission(id, data, files);
+      return api.createSubmission(id, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['assignment', id]);
@@ -37,33 +35,13 @@ export default function SubmitAssignment() {
     },
   });
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    console.log(`Selected ${selectedFiles.length} files:`, selectedFiles.map(f => `${f.name} (${f.type}, ${(f.size / 1024 / 1024).toFixed(2)}MB)`));
-    setFiles(selectedFiles);
-  };
-
-  const addLink = () => {
-    setLinks([...links, { type: 'LINK', url: '', name: '' }]);
-  };
-
-  const removeLink = (index) => {
-    setLinks(links.filter((_, i) => i !== index));
-  };
-
-  const updateLink = (index, field, value) => {
-    const updated = [...links];
-    updated[index][field] = value;
-    setLinks(updated);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    const assets = links
-      .filter((l) => l.url && l.name)
-      .map((l) => ({ type: 'LINK', url: l.url, name: l.name }));
-    
-    submitAssignment({ note, assets });
+    if (!note || note.trim().length === 0) {
+      addToast(t('submissionTextRequired') || 'Submission text is required', 'error');
+      return;
+    }
+    submitAssignment({ note: note.trim() });
   };
 
   return (
@@ -88,88 +66,19 @@ export default function SubmitAssignment() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('note')}
+              {t('submissionText') || 'Submission Text'}
             </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              rows={4}
+              rows={12}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder={t('addNote')}
+              placeholder={t('enterSubmissionText') || 'Enter your assignment submission here...'}
+              required
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('uploadFiles')}
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="mx-auto text-gray-400 mb-2" size={32} />
-              <input
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer text-primary-600 hover:text-primary-700 font-semibold"
-              >
-                {t('selectFiles')}
-              </label>
-              {files.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {files.map((file, i) => (
-                    <div key={i} className="text-sm text-gray-600">{file.name}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                {t('links')}
-              </label>
-              <button
-                type="button"
-                onClick={addLink}
-                className="text-primary-600 hover:text-primary-700 text-sm font-semibold"
-              >
-                + {t('addLink')}
-              </button>
-            </div>
-            <div className="space-y-2">
-              {links.map((link, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder={t('linkName')}
-                    value={link.name}
-                    onChange={(e) => updateLink(index, 'name', e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                  <input
-                    type="url"
-                    placeholder={t('linkUrl')}
-                    value={link.url}
-                    onChange={(e) => updateLink(index, 'url', e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                  {links.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeLink(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <X size={20} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              {t('textOnlySubmission') || 'Please write your assignment submission in the text area above.'}
+            </p>
           </div>
 
           <motion.button

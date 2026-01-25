@@ -23,10 +23,13 @@ window.addEventListener('unhandledrejection', (event) => {
     error?.originalError?.stack?.includes('background.js') ||
     (error?.code === 403 && error?.httpStatus === 200) || // Extension errors often have code 403
     (error?.name === 'n' && error?.httpError === false && error?.httpStatus === 200) || // Common extension error pattern
+    (error?.name === 'n' && error?.httpError === false && error?.httpStatus === 200 && error?.code === 403) || // Specific pattern from error
+    (typeof error === 'object' && error?.name === 'n' && error?.httpError === false && error?.httpStatus === 200) || // Match the exact pattern
+    (typeof error === 'object' && error?.name === 'n' && error?.httpError === false && error?.code === 403) || // Another variant
     error?.stack?.includes('content.js') || // Content script errors
     error?.stack?.includes('requests.js') || // Extension request errors
     error?.stack?.includes('traffic.js') || // Extension traffic errors
-    (typeof error === 'object' && error?.name === 'n' && error?.httpError === false && error?.code === 403); // Specific pattern from error
+    (error?.stack && typeof error.stack === 'string' && error.stack.includes('content.js')); // Stack trace check
   
   if (isExtensionError) {
     event.preventDefault();
@@ -35,7 +38,13 @@ window.addEventListener('unhandledrejection', (event) => {
   
   // Log other unhandled rejections for debugging (only in development)
   if (import.meta.env.DEV && !isExtensionError) {
-    console.error('Unhandled promise rejection:', error);
+    // Convert error objects to proper Error instances for better logging
+    if (typeof error === 'object' && error !== null && !(error instanceof Error)) {
+      const errorMessage = error.message || error.error || JSON.stringify(error);
+      console.error('Unhandled promise rejection:', new Error(errorMessage));
+    } else {
+      console.error('Unhandled promise rejection:', error);
+    }
   }
 });
 
